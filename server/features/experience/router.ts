@@ -129,7 +129,6 @@ export const experienceRouter = router({
             },
           },
         },
-        orderBy: desc(experiencesTable.createdAt),
       });
 
       const commentsCountResults = await Promise.all(
