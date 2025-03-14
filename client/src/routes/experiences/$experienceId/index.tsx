@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
-import { CommentsSection } from '@/features/comments/components/CommentsSection'
-import { ExperienceDetails } from '@/features/experiences/components/ExperienceDetails'
-import { trpc } from '@/router'
+import { CommentsSection } from "@/features/comments/components/CommentsSection";
+import { ExperienceDetails } from "@/features/experiences/components/ExperienceDetails";
+import { trpc } from "@/router";
 
-export const Route = createFileRoute('/experiences/$experienceId/')({
+export const Route = createFileRoute("/experiences/$experienceId/")({
   params: {
     parse: (params) => ({
       experienceId: z.coerce.number().parse(params.experienceId),
@@ -14,17 +14,17 @@ export const Route = createFileRoute('/experiences/$experienceId/')({
   loader: async ({ params, context: { trpcQueryUtils } }) => {
     await trpcQueryUtils.experiences.byId.ensureData({
       id: params.experienceId,
-    })
+    });
   },
   component: ExperiencePage,
-})
+});
 
 function ExperiencePage() {
-  const { experienceId } = Route.useParams()
+  const { experienceId } = Route.useParams();
 
   const [experience] = trpc.experiences.byId.useSuspenseQuery({
     id: experienceId,
-  })
+  });
 
   return (
     <main className="space-y-4 pb-20">
@@ -34,5 +34,5 @@ function ExperiencePage() {
         commentsCount={experience.commentsCount}
       />
     </main>
-  )
+  );
 }
