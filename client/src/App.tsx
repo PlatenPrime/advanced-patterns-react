@@ -8,7 +8,7 @@ import Navbar from "./features/shared/components/Navbar";
 import { ThemeProvider } from "./features/shared/components/ThemeProvider";
 import { Toaster } from "./features/shared/components/ui/Toaster";
 import { env } from "./lib/utils/env";
-import { trpc } from "./trpc";
+import { trpc } from "./router";
 
 export function App() {
   const [queryClient] = useState(() => new QueryClient());
