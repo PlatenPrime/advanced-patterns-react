@@ -78,7 +78,7 @@ export const commentRouter = router({
       }));
     }),
 
-  add: publicProcedure
+  add: protectedProcedure
     .input(
       z.object({
         experienceId: experienceSelectSchema.shape.id,
@@ -86,9 +86,6 @@ export const commentRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // TODO: Remove this once we have a real user
-      const userId = 1;
-
       const now = new Date().toISOString();
 
       const experience = await db.query.experiencesTable.findFirst({
@@ -107,18 +104,18 @@ export const commentRouter = router({
         .values({
           experienceId: input.experienceId,
           content: input.content,
-          userId,
+          userId: ctx.user.id,
           createdAt: now,
           updatedAt: now,
         })
         .returning();
 
-      if (experience.userId !== userId) {
+      if (experience.userId !== ctx.user.id) {
         await db.insert(notificationsTable).values({
           type: "user_commented_experience",
           commentId: comment[0].id,
           experienceId: input.experienceId,
-          fromUserId: userId,
+          fromUserId: ctx.user.id,
           userId: experience.userId,
           createdAt: now,
         });
@@ -127,7 +124,7 @@ export const commentRouter = router({
       return comment[0];
     }),
 
-  edit: publicProcedure
+  edit: protectedProcedure
     .input(
       z.object({
         id: commentSelectSchema.shape.id,
@@ -135,9 +132,6 @@ export const commentRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // TODO: Remove this once we have a real user
-      const userId = 1;
-
       const comment = await db.query.commentsTable.findFirst({
         where: eq(commentsTable.id, input.id),
       });
@@ -149,7 +143,7 @@ export const commentRouter = router({
         });
       }
 
-      if (comment.userId !== userId) {
+      if (comment.userId !== ctx.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You can only edit your own comments",
@@ -170,12 +164,9 @@ export const commentRouter = router({
       return updatedComments[0];
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: commentSelectSchema.shape.id }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: Remove this once we have a real user
-      const userId = 1;
-
       const comment = await db.query.commentsTable.findFirst({
         where: eq(commentsTable.id, input.id),
       });
@@ -191,7 +182,10 @@ export const commentRouter = router({
         where: eq(experiencesTable.id, comment.experienceId),
       });
 
-      if (comment.userId !== userId && experience?.userId !== userId) {
+      if (
+        comment.userId !== ctx.user.id &&
+        experience?.userId !== ctx.user.id
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You can only delete your own comments",
