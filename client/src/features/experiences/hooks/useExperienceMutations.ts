@@ -22,8 +22,10 @@ export function useExperienceMutations(
   const { currentUser } = useCurrentUser();
 
   const { userId: pathUserId } = useParams({ strict: false });
+  const { tagId: pathTagId } = useParams({ strict: false });
 
   const { q: pathQ } = useSearch({ strict: false });
+  const { tags: pathTags } = useSearch({ strict: false });
 
   const editMutation = trpc.experiences.edit.useMutation({
     onSuccess: async ({ id }) => {
@@ -52,8 +54,13 @@ export function useExperienceMutations(
         ...(pathUserId
           ? [utils.experiences.byUserId.invalidate({ id: pathUserId })]
           : []),
-        ...(pathQ ? [utils.experiences.search.invalidate({ q: pathQ })] : []),
+        ...(pathQ || pathTags
+          ? [utils.experiences.search.invalidate({ q: pathQ, tags: pathTags })]
+          : []),
         utils.experiences.favorites.invalidate(),
+        ...(pathTagId
+          ? [utils.experiences.byTagId.invalidate({ id: pathTagId })]
+          : []),
       ]);
 
       toast({
@@ -97,8 +104,13 @@ export function useExperienceMutations(
         ...(pathUserId
           ? [utils.experiences.byUserId.cancel({ id: pathUserId })]
           : []),
-        ...(pathQ ? [utils.experiences.search.cancel({ q: pathQ })] : []),
+        ...(pathQ || pathTags
+          ? [utils.experiences.search.cancel({ q: pathQ, tags: pathTags })]
+          : []),
         utils.experiences.favorites.cancel(),
+        ...(pathTagId
+          ? [utils.experiences.byTagId.cancel({ id: pathTagId })]
+          : []),
       ]);
 
       const previousData = {
@@ -107,12 +119,17 @@ export function useExperienceMutations(
         byUserId: pathUserId
           ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
           : undefined,
-        search: pathQ
-          ? utils.experiences.search.getInfiniteData({
-              q: pathQ,
-            })
-          : undefined,
+        search:
+          pathQ || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                tags: pathTags,
+              })
+            : undefined,
         favorites: utils.experiences.favorites.getInfiniteData(),
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
       };
 
       utils.experiences.byId.setData({ id }, (oldData) => {
@@ -160,22 +177,25 @@ export function useExperienceMutations(
         );
       }
 
-      if (pathQ) {
-        utils.experiences.search.setInfiniteData({ q: pathQ }, (oldData) => {
-          if (!oldData) {
-            return;
-          }
+      if (pathQ || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          { q: pathQ, tags: pathTags },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
 
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              experiences: page.experiences.map((e) =>
-                e.id === id ? updateExperience(e) : e,
-              ),
-            })),
-          };
-        });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
       }
 
       utils.experiences.favorites.setInfiniteData({}, (oldData) => {
@@ -194,6 +214,27 @@ export function useExperienceMutations(
         };
       });
 
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
+
       return { previousData };
     },
     onError: (error, { id }, context) => {
@@ -208,9 +249,9 @@ export function useExperienceMutations(
         );
       }
 
-      if (pathQ) {
+      if (pathQ || pathTags) {
         utils.experiences.search.setInfiniteData(
-          { q: pathQ },
+          { q: pathQ, tags: pathTags },
           context?.previousData.search,
         );
       }
@@ -219,6 +260,13 @@ export function useExperienceMutations(
         {},
         context?.previousData.favorites,
       );
+
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to attend experience",
@@ -255,8 +303,13 @@ export function useExperienceMutations(
         ...(pathUserId
           ? [utils.experiences.byUserId.cancel({ id: pathUserId })]
           : []),
-        ...(pathQ ? [utils.experiences.search.cancel({ q: pathQ })] : []),
+        ...(pathQ || pathTags
+          ? [utils.experiences.search.cancel({ q: pathQ, tags: pathTags })]
+          : []),
         utils.experiences.favorites.cancel(),
+        ...(pathTagId
+          ? [utils.experiences.byTagId.cancel({ id: pathTagId })]
+          : []),
       ]);
 
       const previousData = {
@@ -265,12 +318,17 @@ export function useExperienceMutations(
         byUserId: pathUserId
           ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
           : undefined,
-        search: pathQ
-          ? utils.experiences.search.getInfiniteData({
-              q: pathQ,
-            })
-          : undefined,
+        search:
+          pathQ || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                tags: pathTags,
+              })
+            : undefined,
         favorites: utils.experiences.favorites.getInfiniteData(),
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
       };
 
       utils.experiences.byId.setData({ id }, (oldData) => {
@@ -318,22 +376,25 @@ export function useExperienceMutations(
         );
       }
 
-      if (pathQ) {
-        utils.experiences.search.setInfiniteData({ q: pathQ }, (oldData) => {
-          if (!oldData) {
-            return;
-          }
+      if (pathQ || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          { q: pathQ, tags: pathTags },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
 
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              experiences: page.experiences.map((e) =>
-                e.id === id ? updateExperience(e) : e,
-              ),
-            })),
-          };
-        });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
       }
 
       utils.experiences.favorites.setInfiniteData({}, (oldData) => {
@@ -352,6 +413,27 @@ export function useExperienceMutations(
         };
       });
 
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
+
       return { previousData };
     },
     onError: (error, { id }, context) => {
@@ -366,10 +448,17 @@ export function useExperienceMutations(
         );
       }
 
-      if (pathQ) {
+      if (pathQ || pathTags) {
         utils.experiences.search.setInfiniteData(
-          { q: pathQ },
+          { q: pathQ, tags: pathTags },
           context?.previousData.search,
+        );
+      }
+
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 
@@ -396,26 +485,32 @@ export function useExperienceMutations(
       await Promise.all([
         utils.experiences.byId.cancel({ id }),
         utils.experiences.feed.cancel(),
-        pathQ
-          ? utils.experiences.search.cancel({
-              q: pathQ,
-            })
-          : undefined,
-        pathUserId
-          ? utils.experiences.byUserId.cancel({ id: pathUserId })
-          : undefined,
+        ...(pathQ || pathTags
+          ? [utils.experiences.search.cancel({ q: pathQ, tags: pathTags })]
+          : []),
+        ...(pathUserId
+          ? [utils.experiences.byUserId.cancel({ id: pathUserId })]
+          : []),
+        ...(pathTagId
+          ? [utils.experiences.byTagId.cancel({ id: pathTagId })]
+          : []),
       ]);
 
       const previousData = {
         byId: utils.experiences.byId.getData({ id }),
         feed: utils.experiences.feed.getInfiniteData(),
-        search: pathQ
-          ? utils.experiences.search.getInfiniteData({
-              q: pathQ,
-            })
-          : undefined,
+        search:
+          pathQ || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                tags: pathTags,
+              })
+            : undefined,
         byUserId: pathUserId
           ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
           : undefined,
       };
 
@@ -464,22 +559,46 @@ export function useExperienceMutations(
         );
       }
 
-      if (pathQ) {
-        utils.experiences.search.setInfiniteData({ q: pathQ }, (oldData) => {
-          if (!oldData) {
-            return;
-          }
+      if (pathQ || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          { q: pathQ, tags: pathTags },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
 
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              experiences: page.experiences.map((e) =>
-                e.id === id ? updateExperience(e) : e,
-              ),
-            })),
-          };
-        });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
+
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
       }
 
       return { previousData };
@@ -489,11 +608,9 @@ export function useExperienceMutations(
 
       utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-      if (pathQ) {
+      if (pathQ || pathTags) {
         utils.experiences.search.setInfiniteData(
-          {
-            q: pathQ,
-          },
+          { q: pathQ, tags: pathTags },
           context?.previousData.search,
         );
       }
@@ -502,6 +619,13 @@ export function useExperienceMutations(
         utils.experiences.byUserId.setInfiniteData(
           { id: pathUserId },
           context?.previousData.byUserId,
+        );
+      }
+
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 
@@ -528,28 +652,34 @@ export function useExperienceMutations(
       await Promise.all([
         utils.experiences.byId.cancel({ id }),
         utils.experiences.feed.cancel(),
-        pathQ
-          ? utils.experiences.search.cancel({
-              q: pathQ,
-            })
-          : undefined,
+        ...(pathQ || pathTags
+          ? [utils.experiences.search.cancel({ q: pathQ, tags: pathTags })]
+          : []),
         utils.experiences.favorites.cancel(),
-        pathUserId
-          ? utils.experiences.byUserId.cancel({ id: pathUserId })
-          : undefined,
+        ...(pathUserId
+          ? [utils.experiences.byUserId.cancel({ id: pathUserId })]
+          : []),
+        ...(pathTagId
+          ? [utils.experiences.byTagId.cancel({ id: pathTagId })]
+          : []),
       ]);
 
       const previousData = {
         byId: utils.experiences.byId.getData({ id }),
         feed: utils.experiences.feed.getInfiniteData(),
-        search: pathQ
-          ? utils.experiences.search.getInfiniteData({
-              q: pathQ,
-            })
-          : undefined,
+        search:
+          pathQ || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                tags: pathTags,
+              })
+            : undefined,
         favorites: utils.experiences.favorites.getInfiniteData(),
         byUserId: pathUserId
           ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
           : undefined,
       };
 
@@ -577,11 +707,9 @@ export function useExperienceMutations(
         };
       });
 
-      if (pathQ) {
+      if (pathQ || pathTags) {
         utils.experiences.search.setInfiniteData(
-          {
-            q: pathQ,
-          },
+          { q: pathQ, tags: pathTags },
           (oldData) => {
             if (!oldData) {
               return;
@@ -635,6 +763,27 @@ export function useExperienceMutations(
         );
       }
 
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return;
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === id ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
+
       return { previousData };
     },
     onError: (error, { id }, context) => {
@@ -642,11 +791,9 @@ export function useExperienceMutations(
 
       utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-      if (pathQ) {
+      if (pathQ || pathTags) {
         utils.experiences.search.setInfiniteData(
-          {
-            q: pathQ,
-          },
+          { q: pathQ, tags: pathTags },
           context?.previousData.search,
         );
       }
@@ -660,6 +807,13 @@ export function useExperienceMutations(
         utils.experiences.byUserId.setInfiniteData(
           { id: pathUserId },
           context?.previousData.byUserId,
+        );
+      }
+
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 
