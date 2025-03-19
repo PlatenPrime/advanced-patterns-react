@@ -44,10 +44,10 @@ function ExperienceEditPage() {
     id: experienceId,
   });
 
-  function navigateToExperience(id: Experience["id"]) {
+  function navigateToExperience() {
     router.navigate({
       to: "/experiences/$experienceId",
-      params: { experienceId: id },
+      params: { experienceId },
     });
   }
 
