@@ -28,6 +28,8 @@ function SettingsPage() {
     onSuccess: async () => {
       await utils.auth.currentUser.invalidate();
 
+      await utils.notifications.unreadCount.reset();
+
       router.navigate({ to: "/login" });
 
       toast({
